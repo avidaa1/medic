@@ -1,0 +1,27 @@
+Tracking snippets removed from index.html on 20261125_1557 (AVIDAA: no tracking). Hosts found: www.google-analytics.com, www.googletagmanager.com
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G8M1YZQ8WF"></script>
+
+
+----
+
+/* leftover call */ gtag()
+
+----
+
+/* leftover call */ gtag('js', new Date());
+
+----
+
+/* leftover call */ gtag('config', 'G-G8M1YZQ8WF');
+
+
+---- console-noise cleanup (no-ops removed) ----
+<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
