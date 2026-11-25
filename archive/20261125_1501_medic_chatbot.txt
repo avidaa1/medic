@@ -1,0 +1,335 @@
+Archived (removed from the live page) by the chatbot audit 20261125_1501.
+Original file: index.html
+
+/* ===== chat widget HTML (+css if inline) ===== */
+<div id="chatbot">
+  <div id="chat-box">
+    <div id="chat-head">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div id="rabbit-avatar">
+          <svg id="rabbit-svg" width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+            <ellipse id="ear-l" cx="13" cy="10" rx="3.5" ry="7" fill="#f4ede1" stroke="#1f6f5c" stroke-width="1"/>
+            <ellipse id="ear-r" cx="25" cy="10" rx="3.5" ry="7" fill="#f4ede1" stroke="#1f6f5c" stroke-width="1"/>
+            <ellipse cx="13" cy="10" rx="1.8" ry="5" fill="#c0392b" opacity="0.4"/>
+            <ellipse cx="25" cy="10" rx="1.8" ry="5" fill="#c0392b" opacity="0.4"/>
+            <ellipse id="rabbit-head" cx="19" cy="22" rx="10" ry="9" fill="#f4ede1" stroke="#1f6f5c" stroke-width="1"/>
+            <circle id="eye-l" cx="15" cy="21" r="2" fill="#1f6f5c" opacity="0.9"/>
+            <circle id="eye-r" cx="23" cy="21" r="2" fill="#1f6f5c" opacity="0.9"/>
+            <circle cx="15" cy="21" r="1" fill="#1c1a16"/>
+            <circle cx="23" cy="21" r="1" fill="#1c1a16"/>
+            <circle cx="15.6" cy="20.4" r="0.4" fill="#fff" opacity="0.8"/>
+            <circle cx="23.6" cy="20.4" r="0.4" fill="#fff" opacity="0.8"/>
+            <ellipse id="nose" cx="19" cy="25" rx="1.2" ry="0.8" fill="#c0392b" opacity="0.8"/>
+            <path d="M17.2 26.2 Q19 27.4 20.8 26.2" fill="none" stroke="#1f6f5c" stroke-width="0.7" opacity="0.6"/>
+            <circle id="glow-ring" cx="19" cy="22" r="12" fill="none" stroke="#1f6f5c" stroke-width="0.4" opacity="0.2"/>
+          </svg>
+        </div>
+        <div class="ch-title">MEDIC</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="ch-status"><div class="ch-dot"></div>ONLINE</div>
+        <div class="ch-close" onclick="toggleChat()">&#x2715;</div>
+      </div>
+    </div>
+    <div id="quest-bar"><div id="quest-fill"></div></div>
+    <div id="quest-label"></div>
+    <div id="chat-msgs"></div>
+    <div id="chat-suggestions">
+      <div class="chat-sugg" onclick="quickAsk('why cant hiv be cured')">HIV cure?</div>
+      <div class="chat-sugg" onclick="quickAsk('flu types')">Flu types</div>
+      <div class="chat-sugg" onclick="quickAsk('prion')">Prions</div>
+      <div class="chat-sugg" onclick="quickAsk('rabbit')">?</div>
+    </div>
+    <div id="chat-input-row">
+      <input id="chat-input" placeholder="Ask MEDIC..." maxlength="200">
+      <button id="chat-send" onclick="chatSend()">&#x27A4;</button>
+    </div>
+  </div>
+  <button id="chat-toggle" onclick="toggleChat()" style="position:relative;">
+    <canvas id="pulse-ring" width="58" height="58"></canvas>
+    &#x1FA7A;
+  </button>
+</div>
+
+/* ===== chat JS: KB, quests, matcher, UI (bytes 20354) ===== */
+/* ============================================================
+   AVIDAA CHATBOT MODULE — offline, pure JS, two-tier rabbit hole
+   ============================================================ */
+let chatLastResponse='';
+const KB=[
+  {k:['what is medic','avidaa medic','about medic','medic archive','medic mission'],r:['AVIDAA MEDIC is a sourced biology and medicine archive. Its core question: why can\u2019t we eradicate certain pathogens, and where has research actually reached. Est. 2025, for humans and AI.','MEDIC covers bacteria, viruses, prions, treatment, and immunology — with an eradication deep-dive as its signature section.']},
+  {k:['why cant hiv be cured','hiv cure','hiv reservoir','hiv'],r:['HIV hides in a latent reservoir inside resting CD4+ T-cells, invisible to both the immune system and antiretroviral drugs. Seven people have reached functional cure via stem-cell transplant — far too risky for general use. See the Eradication tab.'],link:null},
+  {k:['flu types','influenza','h5n1','antigenic drift','antigenic shift'],r:['Influenza A, B, C, D — A causes pandemics via antigenic shift (gene swap with bird/pig strains), all types drift (small mutations) yearly. H and N numbers name the surface-protein subtype, like H5N1. See the Pathology tab.']},
+  {k:['prion','prions','cjd','creutzfeldt'],r:['Prions are misfolded proteins with no genetic material — nothing for a drug to target the way antibiotics target bacteria. Standard sterilization doesn\u2019t destroy them. 2025-2026 research lowers the supply of normal prion protein instead of attacking the prion directly.']},
+  {k:['antidote','antidotes','overdose','poisoning'],r:['Antidotes reverse specific toxins: naloxone (opioids), flumazenil (benzodiazepines), atropine (nerve agents), N-acetylcysteine (acetaminophen overdose). See the Pharmacology tab.']},
+  {k:['antibiotic resistance','resistant bacteria','mrsa','superbug'],r:['Resistance is evolution in real time — bacteria that survive treatment pass resistance on, including between species. Zosurabalpin (2025-2026) is the first new antibiotic class against gram-negative bacteria in about 50 years.']},
+  {k:['cancer','remission','car-t','immunotherapy'],r:['Cancer evolves under treatment pressure the way bacteria evolve resistance. "Remission" means no detectable disease, not "gone forever." The first solid-tumor CAR-T therapy was approved in 2025.']},
+  {k:['malaria','tuberculosis','tb vaccine'],r:['Malaria\u2019s parasite has a multi-stage life cycle only partly covered by current vaccines — over 40 million doses delivered across Africa as of 2026. TB\u2019s M72/AS01E vaccine candidate finished phase 3 enrollment in 2025.']},
+  {k:['hepatitis b','hepatitis c','ccc dna','liver virus'],r:['Hepatitis B hides as stable cccDNA inside liver-cell nuclei — 2026 saw the first in-human evidence of directly eliminating it via gene editing. Hepatitis C, by contrast, is already cured in over 95% of treated patients by antiviral drugs alone.']},
+  {k:['herpes','hsv','cold sore','genital herpes'],r:['Herpesviruses travel into nerve ganglia after first infection and go permanently dormant there — antivirals suppress outbreaks but never reach that neuronal hideout. No cure or vaccine exists despite a century of trying.']},
+  {k:['common cold','rhinovirus','cold cure'],r:['The common cold has no cure because roughly 150-180 rhinovirus serotypes circulate with almost no cross-protection between them — it is 150 separate small problems, not one.']},
+  {k:['vaccine types','how vaccines work','mrna vaccine'],r:['Live-attenuated, inactivated, subunit, mRNA, and viral-vector vaccines all train immunity differently but share the same goal: teach the immune system without causing the real disease.']},
+  {k:['gram stain','bacteria structure','gram positive','gram negative'],r:['Gram-positive bacteria have a thick peptidoglycan wall that retains crystal violet stain; gram-negative bacteria have a thinner wall plus an outer membrane that resists it. The distinction predicts which antibiotics will work.']},
+  {k:['immune system','innate immunity','adaptive immunity','t cells','b cells'],r:['Innate immunity is fast and non-specific — skin, inflammation, phagocytes. Adaptive immunity is slower, pathogen-specific, and remembers — B-cells make antibodies, T-cells coordinate and kill directly.']},
+  {k:['regulatory t cells','tregs','nobel prize','foxp3'],r:['Regulatory T-cells keep the immune system from attacking the body\u2019s own tissue. Their discovery won the 2025 Nobel Prize in Physiology or Medicine — foundational to both autoimmune treatment and cancer immunotherapy.']},
+  {k:['medicine cabinet','otc','over the counter','painkiller'],r:['The Cabinet section covers common OTC drug classes by mechanism — pain, allergy, digestive — plus why some combinations matter biologically, without ever giving dosing guidance.']},
+  {k:['who built this','who made medic','io','creator'],r:['IO is the creator and sole developer of AVIDAA, including MEDIC.'],link:'https://avidaa1.github.io/io'},
+  {k:['hub','main platform','other pages'],r:['MEDIC is one dimension of AVIDAA. The HUB links every page in the ecosystem.'],link:'https://avidaa1.github.io/hub'},
+  {k:['rabbit','hole','down the rabbit','signal down','secret','quest'],r:['__QUEST_1__']},
+  {k:['hello','hi','hey','sup','yo','greet','begin'],r:['Signal received. I am MEDIC. Ask about a pathogen, a drug class, or why something can\u2019t be cured.','MEDIC online. What do you want to understand?']},
+  {k:['thanks','thank','good','nice','cool'],r:['That is what this archive is for.']},
+  {k:['who are you','what are you','are you ai','chatbot'],r:['I run entirely in your browser, from the knowledge baked into this page. No server, no tracking. Ask me about a pathogen, a drug class, or the eradication question.']},
+];
+let t1Active=false, t1Answered={};
+const T1_BLOB='mo+y9kT7yvUzdvJfRGq3L4es7g==.cyDBGT0ieWN0pNBew/O3xw==.u593qaVgoL26XKk3.OYFx/BgQJgWz1lFHTncG5LdbYzGXkrOUx5a87jme0xDZP2tzDRY1Bm5BgTzXcwvj.sLyHBeNKDrs1rxHblG+JHx5lkkM3y4U=';
+const T1_RIDDLES=[
+  {q:'AVIDAA is the signal beneath the ____',ans:'noise',hint:'Read the small line right under the big headline on the Home tab'},
+  {q:'AVIDAA was founded in the year ____',ans:'2025',hint:'Look for the "Est." mark near the top of the Home tab'},
+  {q:'AVIDAA is built for humans and ____',ans:'ai',hint:'Same line as the "Est." mark \u2014 read it in full'},
+];
+const T2_BLOB='V9dFikRt8D4C4iKAp2lEuct8wsQ=.516IOB2ZHLesUzHC5jw4qw==.kk9MQpaRWhB5uuc0.VLJKsWe4AmWqHQACcdCJmfOE1Hsx0Gq7AqD6W5qLQlBVD4gaeZEAjIGxjfxM4g27odkF5b7prrRTKg==.VTUUOv/2Ts/v/koDb7hiq4TAPiWUFGUp';
+const T2_RIDDLES=[
+  {q:'AVIDAA signal first lit in the year ____',ans:'2025',hint:'Same "Est." line on the Home tab you already used for Gate 2'},
+  {q:'AVIDAA is built for two kinds of mind: humans and ____',ans:'ai',hint:'Same tagline on the Home tab, last word'},
+  {q:'IO vision: knowledge made ____',ans:'clear',hint:'Read the full tagline on the Home tab \u2014 it ends with this word'},
+];
+let t2Answered={},t2Active=false;
+function setQuestBar(stage,override){
+  const bar=document.getElementById('quest-bar'),fill=document.getElementById('quest-fill'),lbl=document.getElementById('quest-label');
+  if(!bar||!fill||!lbl)return;
+  if(stage===0){bar.classList.remove('active');lbl.classList.remove('active');return;}
+  const q=override||{pct:25,color:'#1f6f5c',label:'SIGNAL'};
+  bar.classList.add('active');lbl.classList.add('active');
+  fill.style.width=q.pct+'%';fill.style.background=q.color;fill.style.boxShadow='0 0 8px '+q.color;
+  lbl.textContent=q.label;lbl.style.color=q.color;
+}
+function t2Norm(s){return s.toLowerCase().trim().replace(/\s+/g,' ');}
+const QUEST_EXIT=['stop','quit','exit','cancel','nevermind','never mind','i resign','resign','give up','forget it','leave'];
+const T1_NUDGES=['Not quite \u2014 the answer is written on this page. Question: ','Close. Read the page and try again: ','The page holds the answer. Try: '];
+function decryptBlob(blob,passphrase,onURL){
+  const parts=blob.split('.');
+  const salt=Uint8Array.from(atob(parts[1]),c=>c.charCodeAt(0));
+  const iv=Uint8Array.from(atob(parts[2]),c=>c.charCodeAt(0));
+  const ctRaw=Uint8Array.from(atob(parts[3]),c=>c.charCodeAt(0));
+  const data=ctRaw.slice(0,ctRaw.length-16),tag=ctRaw.slice(ctRaw.length-16);
+  const combined=new Uint8Array(data.length+tag.length);combined.set(data);combined.set(tag,data.length);
+  const enc=new TextEncoder();
+  return crypto.subtle.importKey('raw',enc.encode(passphrase),{name:'PBKDF2'},false,['deriveKey'])
+    .then(k=>crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['decrypt']))
+    .then(key=>crypto.subtle.decrypt({name:'AES-GCM',iv,tagLength:128},key,combined))
+    .then(buf=>onURL(new TextDecoder().decode(buf)));
+}
+function rabbitReveal(url,title,sub,linkLabel){
+  const msgs=document.getElementById('chat-msgs');
+  const div=document.createElement('div');div.className='cmsg ai';
+  const rainbow='background:linear-gradient(90deg,#ff0080,#ff8c00,#ffe000,#00ff80,#00bfff,#a855f7,#ff0080);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:cb-rainbow 3s linear infinite;';
+  const t=document.createElement('span');t.style.cssText='font-family:var(--cb-fd);font-size:7px;letter-spacing:3px;display:block;margin-bottom:8px;'+rainbow;t.textContent=title;
+  const s=document.createElement('span');s.style.cssText='color:var(--ink-soft);font-size:13px;';s.textContent=sub;
+  const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';
+  a.style.cssText='display:block;margin-top:10px;font-family:var(--cb-fd);font-size:11px;letter-spacing:3px;text-decoration:none;padding-top:8px;border-top:1px solid var(--line);'+rainbow;a.textContent=linkLabel;
+  div.appendChild(t);div.appendChild(s);div.appendChild(a);
+  msgs.appendChild(div);msgs.scrollTop=9999;
+}
+function t1Check(low){
+  if(!t1Active)return null;
+  if(QUEST_EXIT.some(k=>low===k||low.startsWith(k))){t1Active=false;t1Answered={};setQuestBar(0);return {text:'Quest closed. Ask me about a pathogen or drug class.',link:null};}
+  for(let i=0;i<T1_RIDDLES.length;i++){
+    if(t1Answered[i])continue;
+    const a=t2Norm(low),c=t2Norm(T1_RIDDLES[i].ans);
+    if(a===c||a.includes(c)){
+      t1Answered[i]=true;
+      const done=Object.keys(t1Answered).length;
+      if(done===T1_RIDDLES.length){
+        setQuestBar(2,{pct:100,color:'#c98a2c',label:'ACCESS GRANTED'});
+        decryptBlob(T1_BLOB,'noise 2025',url=>rabbitReveal(url,'THE SIGNAL IS OPEN','You followed the page. The hole opens.','ENTER THE RABBIT HOLE \u2193'))
+          .catch(()=>addMsg('The signal failed. Check your answers.','ai'));
+        t1Active=false;t1Answered={};
+        return {handled:true};
+      }
+      const next=T1_RIDDLES.filter((_,j)=>!t1Answered[j])[0];
+      return {text:'Correct. '+done+'/'+T1_RIDDLES.length+' answered. Next: '+next.q+'\nHint: '+next.hint,link:null};
+    }
+  }
+  const un=T1_RIDDLES.filter((_,i)=>!t1Answered[i]);
+  if(un.length){const nu=T1_NUDGES[Math.floor(Math.random()*T1_NUDGES.length)];return {text:nu+un[0].q+'\nHint: '+un[0].hint+'\n(say "stop" to leave)',link:null};}
+  return null;
+}
+function t2CheckAnswer(input,idx){const a=t2Norm(input),c=t2Norm(T2_RIDDLES[idx].ans);return a===c||a.includes(c);}
+function t2Check(low){
+  if(!t2Active)return null;
+  if(QUEST_EXIT.some(k=>low===k||low.startsWith(k))){t2Active=false;t2Answered={};setQuestBar(0);return {text:'Closed. Ask me about a pathogen or drug class.',link:null};}
+  for(let i=0;i<T2_RIDDLES.length;i++){
+    if(t2Answered[i])continue;
+    if(t2CheckAnswer(low,i)){
+      t2Answered[i]=true;
+      const done=Object.keys(t2Answered).length;
+      if(done===T2_RIDDLES.length){
+        setQuestBar(4,{pct:100,color:'#ff0080',label:'THE FLAME'});
+        decryptBlob(T2_BLOB,'2025 ai clear',url=>rabbitReveal(url,'THE FLAME BURNS DEEPER','You found the second layer. Not everyone looks this deep.','ENTER THE FLAME \u2193'))
+          .catch(()=>addMsg('The frequency is wrong. Check your answers.','ai'));
+        t2Active=false;t2Answered={};
+        return {handled:true};
+      }
+      const next=T2_RIDDLES.filter((_,j)=>!t2Answered[j])[0];
+      return {text:'Correct. '+done+'/3 answered. Next: '+next.q+'\nHint: '+next.hint,link:null};
+    }
+  }
+  const un=T2_RIDDLES.filter((_,i)=>!t2Answered[i]);
+  if(un.length){const nu=T1_NUDGES[Math.floor(Math.random()*T1_NUDGES.length)];return {text:nu+un[0].q+'\nHint: '+un[0].hint+'\n(say "stop" to leave)',link:null};}
+  return null;
+}
+function questCheck(low){
+  if(t2Active){const r=t2Check(low);if(r!==null)return r;return null;}
+  if(low.includes('the flame')||low.includes('theflame')||low.includes('go deeper')||low.includes('second layer')){
+    t2Active=true;setQuestBar(1,{pct:15,color:'#ff0080',label:'THE FLAME \u2014 TIER 2'});
+    const f=T2_RIDDLES[0];
+    return {text:'A deeper signal. Three riddles, any order \u2014 the answers live on this page.\n\nRiddle 1: '+f.q+'\nHint: '+f.hint,link:null};
+  }
+  if(t1Active){const r=t1Check(low);if(r!==null)return r;return null;}
+  if(['rabbit','hole','down the rabbit','signal down','secret','quest'].some(k=>low.includes(k))){
+    t1Active=true;setQuestBar(1,{pct:12,color:'#1f6f5c',label:'SIGNAL \u2014 GATE 1/3'});
+    const f=T1_RIDDLES[0];
+    return {text:'The hole is real \u2014 and the way in is on this page. Three gates, in order.\n\nGate 1: '+f.q+'\nHint: '+f.hint,link:null};
+  }
+  return null;
+}
+const chatSession={asked:[],topics:[],lastTone:'neutral',turns:0};
+function lev(a,b){
+  if(Math.abs(a.length-b.length)>2)return 9;
+  const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=0;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[m][n];
+}
+function detectTone(msg){
+  const m=msg.toLowerCase();
+  if(/[!]{1,}|wow|amazing|cool|awesome|love|insane|epic/.test(m))return'excited';
+  if(/\?$|how|why|what|explain|works|technical|mechanism/.test(m))return'curious';
+  if(/really|prove|sure|doubt|fake|scam|nonsense|why should/.test(m))return'skeptical';
+  if(/\b(hey|sup|yo|lol|wassup|gimme|u |ur )\b/.test(m))return'casual';
+  return'neutral';
+}
+const TONE={
+  excited:{open:['Right? ','Now we\u2019re talking \u2014 '],close:[' Fairly wild, isn\u2019t it?','']},
+  curious:{open:['Good question. ','So \u2014 '],close:[' Want more? Open the Eradication tab.','']},
+  skeptical:{open:['Fair. ','Straight answer: '],close:[' Check the sources on the page.','']},
+  casual:{open:['','Sure \u2014 '],close:['','']},
+  neutral:{open:['',''],close:['','']},
+};
+function flavor(text,tone){
+  const t=TONE[tone]||TONE.neutral;
+  const o=t.open[Math.floor(Math.random()*t.open.length)]||'';
+  const c=t.close[Math.floor(Math.random()*t.close.length)]||'';
+  return o+text+c;
+}
+function scoreEntry(e,low,words){
+  let sc=0;
+  e.k.forEach(k=>{
+    if(low===k||words.includes(k))sc+=10;
+    else if(low.includes(k)&&k.length>=4)sc+=k.split(' ').length*k.length*2;
+    else if(k.startsWith(low)||low.startsWith(k))sc+=Math.min(k.length,low.length)*1.2;
+    else words.forEach(w=>{
+      if(w.length>=3&&k.startsWith(w))sc+=w.length*0.9;
+      else if(w.length>=4&&k.includes(w))sc+=w.length*0.5;
+      else if(w.length>=6&&k.length>=6&&lev(w,k)<=1)sc+=w.length*0.6;
+    });
+  });
+  return sc;
+}
+function compose(hits,tone){
+  const top=hits[0].e, v=top.r;
+  let i=Math.floor(Math.random()*v.length);
+  if(v.length>1&&chatLastResponse===v[i])i=(i+1)%v.length;
+  let body=v[i];
+  if(chatSession.turns>2 && chatSession.topics.length>1 && Math.random()<0.28){
+    const prev=chatSession.topics[chatSession.topics.length-1];
+    if(prev && prev!==top._id){
+      const bridges=[' This connects to '+prev+', which you asked about.',''];
+      body+=bridges[Math.floor(Math.random()*bridges.length)];
+    }
+  }
+  if(hits[1] && hits[1].sc>=hits[0].sc*0.6 && hits[1].e!==top){
+    const v2=hits[1].e.r; const seg=v2[Math.floor(Math.random()*v2.length)];
+    body+=' '+seg;
+  }
+  chatLastResponse=v[i];
+  top._id=top._id||top.k[0];
+  chatSession.topics.push(top._id);
+  return {text:flavor(body,tone),link:top.link||null};
+}
+const SMALLTALK=[
+  {k:['who are you','what are you','are you ai','chatbot','what can you do'],r:['I run entirely in your browser, from the knowledge baked into this page.']},
+  {k:['thanks','thank you','thx'],r:['Anytime. Ask me about any pathogen or drug class here.']},
+  {k:['bye','goodbye','see ya'],r:['The archive stays open. Come back anytime.']},
+  {k:['help','what should i ask','options'],r:['Ask about HIV, flu, prions, antidotes, resistance, cancer, or whisper "rabbit".']},
+];
+const REDIRECTS=[
+  'I only know MEDIC \u2014 but I know it well. Ask about a pathogen, a drug class, or the eradication question.',
+  'That one\u2019s outside my signal. Try HIV, flu, prions, antibiotics, or whisper "rabbit".',
+];
+const FRUSTRATION=['stop','shut up','stop talking','no','enough','quiet','leave me','annoying','useless'];
+const BACKOFF=['Fair enough \u2014 I\u2019ll stop pitching. Ask whenever you\u2019re ready.','Understood. Quietly standing by.'];
+function isFrustrated(low){return FRUSTRATION.some(k=>low===k||low.startsWith(k));}
+function smalltalkMatch(low,words){
+  let best=null,bs=0;
+  SMALLTALK.forEach(e=>{const s=scoreEntry(e,low,words);if(s>bs){bs=s;best=e;}});
+  if(best&&bs>=6)return best.r[0];
+  return null;
+}
+function chatMatch(msg){
+  const low=msg.toLowerCase().trim();
+  chatSession.turns++; chatSession.asked.push(low);
+  const tone=detectTone(msg); chatSession.lastTone=tone;
+  const quest=questCheck(low);
+  if(quest)return quest;
+  if(isFrustrated(low))return {text:BACKOFF[Math.floor(Math.random()*BACKOFF.length)],link:null};
+  const words=low.split(/\s+/).filter(w=>w.length>=2);
+  const st=smalltalkMatch(low,words);
+  if(st)return {text:st,link:null};
+  const ranked=KB.filter(e=>!(e.r[0]&&e.r[0].startsWith('__QUEST')))
+    .map(e=>({e,sc:scoreEntry(e,low,words)}))
+    .filter(x=>x.sc>0)
+    .sort((a,b)=>b.sc-a.sc);
+  const bestScore=ranked.length?ranked[0].sc:0;
+  if(ranked.length && bestScore>=6)return compose(ranked,tone);
+  return {text:REDIRECTS[Math.floor(Math.random()*REDIRECTS.length)],link:null};
+}
+function addMsg(text,cls,link){
+  const div=document.createElement('div');div.className='cmsg '+cls;div.textContent=text;
+  if(link){
+    const a=document.createElement('a');a.href=link;a.target='_blank';a.rel='noopener';
+    a.style.cssText='display:block;margin-top:7px;font-size:10px;letter-spacing:2px;color:var(--teal-deep);text-decoration:none;border-top:1px solid var(--line);padding-top:6px;';
+    a.textContent='OPEN \u2197';div.appendChild(a);
+  }
+  const m=document.getElementById('chat-msgs');m.appendChild(div);m.scrollTop=9999;
+}
+function showTyping(){
+  const t=document.createElement('div');t.className='typing-indicator';t.id='typing';
+  t.innerHTML='<span></span><span></span><span></span>';
+  const m=document.getElementById('chat-msgs');m.appendChild(t);m.scrollTop=9999;return t;
+}
+let chatOpen=false;
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chat-box').classList.toggle('open',chatOpen);
+  if(chatOpen&&document.getElementById('chat-msgs').children.length===0){
+    setTimeout(()=>addMsg('MEDIC online \u2014 built from this page, runs in your browser. Ask about a pathogen or drug class.','ai'),350);
+  }
+  if(chatOpen)document.getElementById('chat-input').focus();
+}
+function chatSend(){
+  const inp=document.getElementById('chat-input');const msg=inp.value.trim();if(!msg)return;
+  addMsg(msg,'user');inp.value='';
+  if(window.rabbitThink)window.rabbitThink();
+  const typing=showTyping();
+  setTimeout(()=>{
+    typing.remove();
+    const res=chatMatch(msg);
+    if(!res.handled)addMsg(res.text,'ai',res.link);
+    if(window.rabbitRespond)window.rabbitRespond();
+    setTimeout(()=>{if(window.rabbitIdle)window.rabbitIdle();},3000);
+  },380+Math.random()*340);
+}
+function quickAsk(q){document.getElementById('chat-input').value=q;chatSend();toggleChat();if(!chatOpen)toggleChat();}
+document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter')chatSend();});
